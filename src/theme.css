@@ -343,6 +343,9 @@ h3 {
 .relative {
     position: relative;
 }
+.absolute {
+    position: absolute;
+}
 @-webkit-keyframes load3 {
     0% {
         -webkit-transform: rotate(0deg);
