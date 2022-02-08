@@ -116,11 +116,11 @@ export default {
     },
     editResumeBlock (id) {
       let resumeBlock = this.resumeBlocks.find(e => e.id === id)
-      //Object.keys(this.form).forEach(key => this.form[key] = resumeBlock[key])
+      Object.keys(this.form).forEach(key => this.form[key] = resumeBlock[key])
       // this.form.id = resumeBlock.id;
       // this.form.type = resumeBlock.type;
       // this.form.content = resumeBlock.content;
-      this.form = {...resumeBlock}
+      // this.form = {...resumeBlock}
     },
     async removeResumeBlock (id) {
       try {
