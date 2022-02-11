@@ -27,11 +27,6 @@ export default {
       required: true
     }
   },
-  methods: {
-    editBlock ($event) {
-      console.log($event)
-    }
-  },
   components: { AppResumeTitle, AppResumeSubtitle, AppResumeAvatar, AppResumeText }
 }
 </script>

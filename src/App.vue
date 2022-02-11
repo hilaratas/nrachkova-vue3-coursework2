@@ -6,26 +6,23 @@
   <div class="container column relative">
     <div class="card card-w30">
       <app-constructor
-          :types="TYPES"
-          :id="form.id"
-          :type="form.type"
-          :content="form.content"
-          @submit-form="handleSubmit"
+          :formProps="form"
+          :resetFlag = "resetFlag"
+          @submit-form="onSubmit"
       >
       </app-constructor>
     </div>
     <div class="card card-w70">
       <app-resume
           :resume-blocks="resumeBlocks"
-          @edit-block="editResumeBlock"
-          @remove-block="removeResumeBlock"
+          @edit-block="onEditResumeBlock"
+          @remove-block="onRemoveResumeBlock"
       >
-
       </app-resume>
     </div>
   </div>
 
-  <app-comments @error="handleError"></app-comments>
+  <app-comments @error="onError"></app-comments>
 </template>
 
 <script>
@@ -33,7 +30,7 @@ import AppConstructor from "@/components/AppConstructor";
 import AppComments from "@/components/AppComments";
 import AppResume from "@/components/AppResume";
 import AppAlert from "@/components/AppAlert";
-import {TYPES, FORM_DEFAULTS, URL} from "@/components/constants";
+import {URL} from "@/components/constants";
 import axios from "axios";
 
 export default {
@@ -41,7 +38,7 @@ export default {
     return {
       resumeBlocks: [],
       form: {
-        id: null,
+        id: 0,
         type: 'title',
         content: ''
       },
@@ -49,83 +46,78 @@ export default {
         isLoading: false,
         comments: null
       },
+      resetFlag: Date.now(),
       error: null
     }
   },
-  beforeCreate() {
-    this.TYPES = TYPES;
-    this.FORM_DEFAULTS = FORM_DEFAULTS;
-  },
   mounted() {
-    this.loadResumeBlocks();
+    this.loadResumeBlocksFB();
   },
   methods: {
-    async handleSubmit(data) {
-      let {type, content} = data;
+    async onSubmit(data) {
+      const {id, type, content} = data;
+      const resumeBlock = {type, content};
+      const mode = !id ? 'add' : 'edit';
+
+      mode === 'add' ?  await this.addResumeData(resumeBlock) : await this.editResumeData(id, resumeBlock);
+      await this.loadResumeBlocksFB();
+    },
+    async addResumeData(resumeBlock) {
       if ( this.firstIsNotTitle(type) ) {
-        this.error = `Ваше резюме надо начать с заголовка.<br>
-          Сначала создайте запись типа "Заголовок". <br>
-          Потом можете создавать запись любого типа в любом порядке.`;
+        this.error = `Ваше резюме надо начать с заголовка.<br>Сначала создайте запись типа "Заголовок". <br>Потом можете создавать запись любого типа в любом порядке.`;
         return;
       }
       this.error = null;
-      let resumeBlock = {type, content};
-      await this.createResumeBlock(resumeBlock);
-      await this.loadResumeBlocks();
-      this.resetForm();
+      await this.createResumeBlockFB(resumeBlock);
+      this.resetFlag = Date.now();
     },
-    resetForm() {
-      Object.keys(this.form).forEach(key => this.form[key] = this.FORM_DEFAULTS[key])
-      // this.form.id = null;
-      // this.form.type = 'title';
-      // this.form.content = '';
+    async editResumeData(id, resumeBlock){
+      await this.editResumeBlockFB(id, resumeBlock);
+      this.resetFlag = Date.now();
     },
     firstIsNotTitle(type) {
       return !this.resumeBlocks.length && type !== 'title'
     },
-    handleError(message) {
+    onError(message) {
       this.error = message;
     },
-    async loadResumeBlocks ( data ) {
+    onEditResumeBlock(id) {
+      const resumeBlock = this.resumeBlocks.find(e => e.id === id)
+      Object.keys(this.form).forEach(key => this.form[key] = resumeBlock[key])
+      console.log(this.form)
+    },
+    async loadResumeBlocksFB () {
       try {
         const {data} = await axios.get(`${URL}/resume.json`)
         if ( data === null) {
           this.resumeBlocks = []
           return;
         }
+        this.resumeBlocks = Object.keys(data).map(key => ({id: key, ...data[key]}))
+      } catch (e) {
+        this.error = e.message;
+      }
+    },
+    async createResumeBlockFB (data ) {
+      try {
+        await axios.post(`${URL}/resume.json`, data)
+      } catch (e) {
+        this.error = e.message;
+      }
+    },
+    async editResumeBlockFB (id, newData) {
+      try {
+        await axios.put(`${URL}/resume/${id}.json`,{ id, ...newData})
+        await this.loadResumeBlocksFB();
+      } catch (e) {
+        this.error = e.message;
+      }
 
-        this.resumeBlocks = Object.keys(data).map(key => (
-            {id: key,
-              ...data[key]
-            }
-        ))
-      } catch (e) {
-        this.error = e.message;
-      }
     },
-    async createResumeBlock ( data ) {
+    async onRemoveResumeBlock (id) {
       try {
-        const response = await axios({
-          method: 'post',
-          url: `${URL}/resume.json`,
-          data
-        })
-      } catch (e) {
-        this.error = e.message;
-      }
-    },
-    editResumeBlock (id) {
-      let resumeBlock = this.resumeBlocks.find(e => e.id === id)
-      Object.keys(this.form).forEach(key => this.form[key] = resumeBlock[key])
-      // this.form.id = resumeBlock.id;
-      // this.form.type = resumeBlock.type;
-      // this.form.content = resumeBlock.content;
-      // this.form = {...resumeBlock}
-    },
-    async removeResumeBlock (id) {
-      try {
-        let result = await axios.delete(`${URL}/resume/${id}.json`)
-        await this.loadResumeBlocks();
+        await axios.delete(`${URL}/resume/${id}.json`)
+        await this.loadResumeBlocksFB();
       } catch (e) {
         this.error = e.message;
       }

@@ -1,15 +1,15 @@
 <template>
-  <form @submit.prevent="handleSubmit" >
+  <form @submit.prevent="$emit('submitForm', formData)" >
     <div class="form-control">
       <label for="type">Тип блока</label>
-      <select name="type" id="type" v-model="blockType" >
-        <option v-for="ts in types" :value="ts.value" :key="ts.value">{{ ts.text }}</option>
+      <select name="type" id="type" v-model="formData.type" >
+        <option v-for="ts in TYPES" :value="ts.value" :key="ts.value">{{ ts.text }}</option>
       </select>
     </div>
 
     <div class="form-control">
       <label for="content">Значение</label>
-      <textarea name="content" id="content" rows="3" v-model.trim="blockContent"></textarea>
+      <textarea name="content" id="content" rows="3" v-model.trim="formData.content"></textarea>
     </div>
 
     <button type="submit" class="btn primary" :disabled="isDisabled">Добавить</button>
@@ -17,53 +17,43 @@
 </template>
 
 <script>
+import {TYPES, FORM_DEFAULTS} from "@/components/constants";
+
 export default {
   name: "AppConstructor",
   props: {
-    types: {
-      type: Array,
+    formProps: {
+      type: Object // {id: [String | Null], type: String, content: String}
+    },
+    resetFlag: {
+      type: Number,
       required: true
-    },
-    id: {
-      type: [String, null],
-      required: true
-    },
-    type: {
-      type: String,
-      required: true,
-      default: 'title'
-    },
-    content: {
-      type: String,
-      required: true,
-      default: ''
     }
   },
   data() {
     return {
-      blockId: this.id,
-      blockType: this.type,
-      blockContent: this.content
+      formData: this.formProps,
     }
   },
   emits: ['submitForm'],
+  beforeCreate() {
+    this.TYPES = TYPES;
+  },
   computed: {
     isDisabled() {
-      return this.blockContent.length < 3;
+      return this.formData.content.length < 3;
     }
   },
   methods: {
-    handleSubmit() {
-      const data = {
-        type: this.blockType,
-        content: this.blockContent
-      }
-      this.$emit('submitForm', data)
-    }
   },
-  updated() {
-    console.log('props:', this.id, this.type, this.content)
-    console.log('data:', this.blockId, this.blockType, this.blockContent)
+  watch: {
+    resetFlag() {
+      console.log('Флаг изменен')
+      this.formData = {
+        id: 0,
+        ...FORM_DEFAULTS
+      }
+    }
   }
 }
 </script>
