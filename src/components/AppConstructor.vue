@@ -47,6 +47,13 @@ export default {
   methods: {
   },
   watch: {
+    formProps:{
+      handler(newFormProps) {
+        console.log('Ну и ну')
+        this.formData = newFormProps
+      },
+      deep: true
+    },
     resetFlag() {
       console.log('Флаг изменен')
       this.formData = {
